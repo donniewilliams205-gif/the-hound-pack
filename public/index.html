@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Hound Pack — Gaming Community</title>
+<link rel="stylesheet" href="/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🐺 <span>THE HOUND <em>PACK</em></span></div>
+  <div id="header-user" class="header-user"></div>
+</header>
+
+<!-- Auth view -->
+<main id="auth-view" class="auth-wrap hidden">
+  <section class="hero">
+    <h1>THE HOUND <em>PACK</em></h1>
+    <p class="tagline">Clips. Pictures. Late-night lobbies. One Pack.</p>
+    <p>Share your best gaming moments, squad up in chat and the Voice &amp; Video Lounge, send gifts, earn Hound Coins, and climb the leaderboard.</p>
+  </section>
+  <section class="card auth-card">
+    <div class="tabs">
+      <button id="tab-login" class="tab active">Log In</button>
+      <button id="tab-signup" class="tab">Sign Up</button>
+    </div>
+    <form id="login-form">
+      <label>Username <input name="username" required autocomplete="username"></label>
+      <label>Password <input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn primary" type="submit">Log In</button>
+      <p class="form-error" id="login-error"></p>
+    </form>
+    <form id="signup-form" class="hidden">
+      <label>Username <input name="username" required pattern="[A-Za-z0-9_]{3,24}" title="3–24 letters, numbers or underscores" autocomplete="username"></label>
+      <label>Display name <input name="displayName" maxlength="40"></label>
+      <label>Avatar emoji <input name="avatarEmoji" maxlength="4" placeholder="🎮" class="small"></label>
+      <label>Password (8+ characters) <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+      <label class="check"><input type="checkbox" name="isAdult"> I am 21 or older (unlocks the Chill Corner room)</label>
+      <button class="btn primary" type="submit">Join the Pack — get 100 Hound Coins</button>
+      <p class="form-error" id="signup-error"></p>
+    </form>
+  </section>
+</main>
+
+<!-- App view -->
+<main id="app-view" class="layout hidden">
+  <div class="main-col">
+    <section class="card composer">
+      <h2>Drop a moment, Pack 📣</h2>
+      <div class="kind-tabs">
+        <button data-kind="moment" class="kind active">💬 Moment</button>
+        <button data-kind="picture" class="kind">🖼️ Picture</button>
+        <button data-kind="clip" class="kind">🎬 Clip</button>
+      </div>
+      <div class="starter-row">
+        <span>Starters:</span>
+        <button class="chip starter" data-text="Just pulled off the craziest play…">Crazy play</button>
+        <button class="chip starter" data-text="Check out my setup / haul:">Setup / haul</button>
+        <button class="chip starter" data-text="Who's on tonight? Squad up!">Squad up</button>
+      </div>
+      <form id="post-form">
+        <input id="post-title" maxlength="120" placeholder="Give it a title…" required>
+        <div class="row">
+          <select id="post-room"></select>
+          <span id="post-counter" class="muted">0 / 2000</span>
+        </div>
+        <textarea id="post-body" rows="3" maxlength="2000" placeholder="Tell the Pack about it…"></textarea>
+        <div id="picture-fields" class="hidden">
+          <input id="post-image-url" placeholder="Paste a picture link (https://…)">
+          <div class="row"><span class="muted">or upload:</span><input id="post-image-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp"></div>
+          <img id="post-image-preview" class="preview hidden" alt="Picture preview">
+        </div>
+        <div id="clip-fields" class="hidden">
+          <input id="post-media-url" placeholder="Paste a YouTube or video link…">
+        </div>
+        <button class="btn primary" type="submit">Post it (+5 Hound Coins)</button>
+        <p class="form-error" id="post-error"></p>
+      </form>
+    </section>
+
+    <nav id="room-filter" class="room-filter"></nav>
+    <section id="feed"></section>
+
+    <section class="card" id="lounge">
+      <h2>🎙️ Voice &amp; Video Lounge</h2>
+      <p class="muted">Real voice and video between Pack members, right in the browser. Pick a channel and join — your browser will ask for mic/camera permission. Small-room mesh: best with a handful of people per channel. Some networks need a TURN server for WebRTC (see the site owner's notes).</p>
+      <div class="row">
+        <select id="vc-channel">
+          <option value="lounge-1">🔊 Lounge 1 — General</option>
+          <option value="lounge-2">🎮 Lounge 2 — Squad Up</option>
+          <option value="chill-stage">🌿 Chill Stage</option>
+          <option value="game-night">🏆 Game Night Stage</option>
+        </select>
+        <button id="vc-join" class="btn primary">Join Channel</button>
+        <button id="vc-leave" class="btn hidden">Leave</button>
+      </div>
+      <div class="row vc-controls hidden" id="vc-controls">
+        <button id="vc-mute" class="btn">🎤 Mute</button>
+        <button id="vc-camera" class="btn">📷 Camera Off</button>
+        <button id="vc-screen" class="btn">🖥️ Share Screen</button>
+        <button id="vc-hand" class="btn">✋ Raise Hand</button>
+      </div>
+      <div id="vc-grid" class="vc-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>💬 Lobby Chat <span class="muted">(live)</span></h2>
+      <div id="chat-box" class="chat-box"></div>
+      <form id="chat-form" class="row">
+        <input id="chat-input" maxlength="500" placeholder="Message the Pack…" class="grow">
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </section>
+  </div>
+
+  <aside class="side-col">
+    <section class="card" id="profile-card">
+      <h2>Your Den</h2>
+      <div id="my-profile"></div>
+      <form id="profile-form">
+        <label>Display name <input name="displayName" maxlength="40"></label>
+        <label>Avatar emoji <input name="avatarEmoji" maxlength="4" class="small"></label>
+        <label>Bio <textarea name="bio" rows="2" maxlength="300"></textarea></label>
+        <label class="check"><input type="checkbox" name="isAdult"> I am 21+ (Chill Corner)</label>
+        <button class="btn" type="submit">Save profile</button>
+      </form>
+      <button id="daily-howl" class="btn gold">🐺 Daily Howl — claim 20 coins</button>
+      <p class="muted" id="howl-msg"></p>
+      <div id="my-gifts"></div>
+    </section>
+
+    <section class="card">
+      <h2>🎁 Gift Den</h2>
+      <p class="muted">Send a gift — coins move from your balance to theirs, for real.</p>
+      <div id="gift-catalog" class="gift-grid"></div>
+      <form id="gift-form" class="row">
+        <input id="gift-to" placeholder="Recipient username" class="grow" required>
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+      <p class="form-error" id="gift-msg"></p>
+    </section>
+
+    <section class="card">
+      <h2>🏆 Leaderboard</h2>
+      <ol id="leaderboard" class="leaderboard"></ol>
+    </section>
+
+    <section class="card">
+      <h2>📅 Events</h2>
+      <div id="events"></div>
+    </section>
+
+    <section class="card">
+      <h2>🗳️ Pack Poll</h2>
+      <p id="poll-q"></p>
+      <div id="poll-options"></div>
+    </section>
+
+    <section class="card">
+      <h2>🎉 Invite the Pack</h2>
+      <p>Copy this and send it to your people:</p>
+      <textarea id="invite-text" rows="4" readonly>Yo! Join me in The Hound Pack 🐺🎮 — we post clips & pictures, squad up in voice/video, send gifts and run game nights. I'm Houndy (@Bludhound420), Founder. Here's the link: YOUR-SITE-URL</textarea>
+      <button id="copy-invite" class="btn">Copy invite message</button>
+    </section>
+
+    <section class="card">
+      <h2>🛡️ Aegis Shield — Security &amp; Updates</h2>
+      <p class="muted">Protected by Aegis Shield: hashed passwords, login rate-limiting, security headers, and a security event log. Dependency security updates are proposed weekly by Dependabot, and this site auto-deploys from its Git repository — that's how it stays patched.</p>
+      <div id="system-info"></div>
+      <div id="security-events"></div>
+    </section>
+
+    <section class="card">
+      <h2>📜 House Rules &amp; FAQ</h2>
+      <ul class="rules">
+        <li>Be kind. Trash talk the play, never the player.</li>
+        <li>No spam, no scams, no stealing accounts or coins.</li>
+        <li>Chill Corner is 21+ — keep it there.</li>
+        <li>Pet pics are always welcome. Always.</li>
+      </ul>
+      <details><summary>How do I earn Hound Coins?</summary><p>Posting earns 5, the Daily Howl earns 20 once a day, and other members can gift you coins.</p></details>
+      <details><summary>How do gifts work?</summary><p>Pick a gift in the Gift Den, type a member's username, and send. The coins leave your balance and land in theirs.</p></details>
+      <details><summary>How does voice/video work?</summary><p>Join a Lounge channel, allow mic/camera, and you're connected to everyone else in that channel through your browsers.</p></details>
+    </section>
+  </aside>
+</main>
+
+<footer class="footer">🐺 The Hound Pack — founded by Houndy (@Bludhound420) · Protected by Aegis Shield</footer>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

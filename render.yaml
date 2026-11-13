@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: the-hound-pack
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FOUNDER_USERNAME
+        value: bludhound420
+      - key: DATA_DIR
+        value: /var/data
+    # IMPORTANT: attach a Persistent Disk in the Render dashboard:
+    #   Settings > Disks > Add Disk, mount path /var/data (1 GB is plenty to start).
+    # Without a disk, your database and uploaded pictures are erased on every redeploy.
+    disk:
+      name: hound-pack-data
+      mountPath: /var/data
+      sizeGB: 1
