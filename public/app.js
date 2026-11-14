@@ -1,6 +1,6 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
-const ROOMS = ['The Den', 'Clip Vault', 'Pet Pics', 'Setup Flex', 'Chill Corner', 'Meme Cave', 'Wins & Fails', 'Beats & Music', 'Munchie Runs'];
+const ROOMS = ['The Den', 'Clip Vault', 'Pet Pics', 'Setup Flex', 'Chill Corner', 'Meme Cave', 'Wins & Fails', 'Beats & Music', 'Munchie Runs', 'Looking for Squad'];
 const REACTIONS = ['🔥', '❤️', '😂', '🎮', '🐺', '🌿'];
 let me = null;
 let currentRoom = 'All Rooms';
@@ -59,6 +59,7 @@ function enterApp() {
   $('app-view').classList.remove('hidden');
   renderHeader();
   buildRooms(); loadPosts(); loadMembers(); loadEvents(); loadPoll(); loadGifts(); loadMine(); loadSystem(); loadChat('lobby');
+  startGameNightCountdown(); loadSpotlight(); initArcade();
   socket.emit('chat:join', 'lobby');
   const pf = $('profile-form');
   pf.displayName.value = me.displayName; pf.avatarEmoji.value = me.avatarEmoji; pf.bio.value = me.bio || ''; pf.isAdult.checked = !!me.isAdult;
@@ -119,16 +120,20 @@ async function loadPosts() {
   const { posts } = await api('/api/posts' + q);
   $('feed').innerHTML = posts.map(renderPost).join('') || '<div class="card">No posts here yet — be the first!</div>';
   wirePosts();
+  loadSpotlight();
 }
-function renderPost(p) {
-  let media = '';
-  if (p.kind === 'picture' && p.imageUrl) media = `<img class="post-img" src="${esc(p.imageUrl)}" alt="">`;
+function postMedia(p) {
+  if (p.kind === 'picture' && p.imageUrl) return `<img class="post-img" src="${esc(p.imageUrl)}" alt="">`;
   if (p.kind === 'clip' && p.mediaUrl) {
     const emb = youtubeEmbed(p.mediaUrl);
-    media = emb
+    return emb
       ? `<div class="video-wrap"><iframe src="${emb}" allowfullscreen title="clip"></iframe></div>`
       : `<div class="video-wrap"><video src="${esc(p.mediaUrl)}" controls></video></div>`;
   }
+  return '';
+}
+function renderPost(p) {
+  const media = postMedia(p);
   const reactions = REACTIONS.map(e => {
     const count = (p.reactions || {})[e] || 0;
     return `<button class="react" data-post="${p.id}" data-emoji="${e}">${e}${count ? ' ' + count : ''}</button>`;
@@ -236,11 +241,16 @@ async function loadEvents() {
   const { events } = await api('/api/events');
   $('events').innerHTML = events.map(ev => `<div class="event"><strong>${esc(ev.title)}</strong><br><span class="muted">${esc(ev.date)}</span><p>${esc(ev.description)}</p><button class="btn rsvp" data-id="${ev.id}">${ev.going ? '✅ Going' : 'RSVP'} · ${ev.rsvpCount}</button></div>`).join('') || '<p class="muted">No events yet.</p>';
   document.querySelectorAll('.rsvp').forEach(b => b.onclick = async () => { await api(`/api/events/${b.dataset.id}/rsvp`, { method: 'POST' }); loadEvents(); });
+  renderHubRsvp(events.find(e => /game night/i.test(e.title)));
 }
 async function loadPoll() {
   const data = await api('/api/poll');
   $('poll-q').textContent = data.question;
-  $('poll-options').innerHTML = data.options.map(o => `<p><button class="btn poll-btn" data-id="${o.id}">${o.mine ? '✅ ' : ''}${esc(o.text)}</button> <span class="muted">${o.votes} votes</span></p>`).join('');
+  const total = data.options.reduce((sum, o) => sum + o.votes, 0);
+  $('poll-options').innerHTML = data.options.map(o => {
+    const pct = total ? Math.round((o.votes / total) * 100) : 0;
+    return `<div class="poll-row"><p><button class="btn poll-btn" data-id="${o.id}">${o.mine ? '✅ ' : ''}${esc(o.text)}</button> <span class="muted">${o.votes} votes · ${pct}%</span></p><div class="poll-bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('') + (total ? '' : '<p class="muted">No votes yet — be the first!</p>');
   document.querySelectorAll('.poll-btn').forEach(b => b.onclick = async () => { await api('/api/poll/vote', { method: 'POST', body: JSON.stringify({ optionId: b.dataset.id }) }); loadPoll(); });
 }
 
@@ -395,6 +405,188 @@ $('vc-screen').onclick = async () => {
     screenTrack.onended = () => { screenStream = null; $('vc-screen').textContent = '🖥️ Share Screen'; if (localStream) vcTile('local', me.displayName + ' (you)', localStream, true); };
   } catch {}
 };
+
+/* ---------- Game Night Live hub ---------- */
+// Pack Game Night is every Saturday at 8:00 PM Central. All math is done in
+// the America/Chicago wall-clock frame so the countdown is right wherever
+// the visitor's own clock is set.
+function chicagoNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+}
+function nextGameNight() {
+  const now = chicagoNow();
+  const start = new Date(now);
+  start.setHours(20, 0, 0, 0);
+  start.setDate(start.getDate() + ((6 - now.getDay()) + 7) % 7); // next Saturday (6)
+  const end = new Date(start); end.setHours(21, 30, 0, 0); // show wraps ~9:30 PM
+  if (now > end) start.setDate(start.getDate() + 7);
+  return start;
+}
+let gnTimer = null;
+function startGameNightCountdown() {
+  const tick = () => {
+    const now = chicagoNow();
+    const start = nextGameNight();
+    const end = new Date(start); end.setHours(21, 30, 0, 0);
+    const cd = $('gn-countdown');
+    $('gn-date-line').textContent = 'Next Game Night: ' + start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) + ' · 8:00 PM CT · Voice & Video Lounge + Lobby Chat';
+    if (now >= start && now <= end) {
+      cd.textContent = '🔴 LIVE NOW — join the Lounge!';
+      cd.classList.add('live');
+      return;
+    }
+    cd.classList.remove('live');
+    let s = Math.max(0, Math.floor((start - now) / 1000));
+    const d = Math.floor(s / 86400); s -= d * 86400;
+    const h = Math.floor(s / 3600); s -= h * 3600;
+    const m = Math.floor(s / 60); const sec = s - m * 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    cd.textContent = `⏳ ${d > 0 ? d + 'd ' : ''}${pad(h)}:${pad(m)}:${pad(sec)} to Game Night`;
+  };
+  tick();
+  if (gnTimer) clearInterval(gnTimer);
+  gnTimer = setInterval(tick, 1000);
+}
+function renderHubRsvp(ev) {
+  const btn = $('gn-rsvp');
+  if (!btn) return;
+  if (!ev) { $('gn-rsvp-count').textContent = ''; btn.disabled = true; btn.textContent = 'Game Night event not posted yet'; return; }
+  btn.disabled = false;
+  btn.textContent = ev.going ? '✅ You\'re going — see you Saturday!' : 'RSVP to Game Night';
+  $('gn-rsvp-count').textContent = `${ev.rsvpCount} Pack member${ev.rsvpCount === 1 ? '' : 's'} going`;
+  btn.onclick = async () => { await api(`/api/events/${ev.id}/rsvp`, { method: 'POST' }); loadEvents(); };
+}
+
+/* ---------- Clip of the Week spotlight ---------- */
+function reactionTotal(p) {
+  return Object.values(p.reactions || {}).reduce((a, b) => a + b, 0);
+}
+let spotlightBusy = false;
+async function loadSpotlight() {
+  const el = $('spotlight-body');
+  if (!el || spotlightBusy) return;
+  spotlightBusy = true;
+  try {
+    const { posts } = await api('/api/posts');
+    const clips = posts.filter(p => p.kind === 'clip');
+    if (!clips.length) {
+      el.innerHTML = '<p class="muted">No clips yet — the spotlight is warmed up and waiting. Post the first banger in the <strong>Clip Vault</strong> and the most-reacted clip takes this spot. 🎬</p>';
+      return;
+    }
+    clips.sort((a, b) => (reactionTotal(b) - reactionTotal(a)) || (new Date(b.createdAt) - new Date(a.createdAt)));
+    const top = clips[0];
+    const total = reactionTotal(top);
+    el.innerHTML = `<p><span class="spotlight-badge">🏆 ${total} reaction${total === 1 ? '' : 's'}</span></p>
+      <h3>${esc(top.title)}</h3>
+      <p class="post-meta">${esc(top.authorEmoji || '🎮')} ${esc(top.authorDisplay)} (@${esc(top.authorName)}) · ${esc(top.room)}</p>
+      ${postMedia(top)}
+      <p>${esc(top.body || '')}</p>
+      <p><a href="#post-${top.id}" class="spotlight-link">Jump to this post in the feed →</a></p>`;
+  } catch { /* spotlight is a bonus; never break the page over it */ }
+  finally { spotlightBusy = false; }
+}
+
+/* ---------- Pack Arcade (client-side fun only — NOT Hound Coins) ---------- */
+const SPIN_PRIZES = [10, 50, 5, 25, 100, 5, 15, 40];
+let arcade = { tokens: 0, bestClicks: 0, bestReaction: null, lastSpin: '' };
+try { Object.assign(arcade, JSON.parse(localStorage.getItem('hp_arcade_v1') || '{}')); } catch {}
+let arcadeReady = false;
+function saveArcade() { try { localStorage.setItem('hp_arcade_v1', JSON.stringify(arcade)); } catch {} }
+function renderArcade() {
+  $('arcade-tokens').textContent = arcade.tokens;
+  const bits = [];
+  if (arcade.bestClicks) bits.push(`Best frenzy: ${arcade.bestClicks} clicks`);
+  if (arcade.bestReaction) bits.push(`Best reaction: ${arcade.bestReaction} ms`);
+  $('arcade-best').textContent = bits.join(' · ');
+  const today = new Date().toISOString().slice(0, 10);
+  const spun = arcade.lastSpin === today;
+  $('spin-btn').disabled = spun;
+  if (spun && !$('spin-status').textContent) $('spin-status').textContent = 'You already spun today — come back tomorrow! 🎡';
+}
+function awardTokens(n) { arcade.tokens += n; saveArcade(); renderArcade(); }
+function initArcade() {
+  if (arcadeReady) { renderArcade(); return; }
+  arcadeReady = true;
+  // Spin wheel face: alternating crimson / dark segments
+  $('spin-wheel').style.background = `conic-gradient(${SPIN_PRIZES.map((_, i) => `${i % 2 ? '#241118' : '#8f0e27'} ${i * 45}deg ${(i + 1) * 45}deg`).join(',')})`;
+  renderArcade();
+
+  // Coin Clicker Frenzy
+  let frenzy = null;
+  $('clicker-start').onclick = () => {
+    if (frenzy) return;
+    let clicks = 0;
+    const coin = $('clicker-coin');
+    coin.disabled = false;
+    $('clicker-start').disabled = true;
+    $('clicker-status').textContent = '🔥 FRENZY! 15 seconds — GO!';
+    coin.onclick = () => { clicks++; $('clicker-status').textContent = `🔥 ${clicks} clicks… keep going!`; };
+    frenzy = setTimeout(() => {
+      frenzy = null;
+      coin.disabled = true; coin.onclick = null;
+      $('clicker-start').disabled = false;
+      awardTokens(clicks);
+      if (clicks > arcade.bestClicks) { arcade.bestClicks = clicks; saveArcade(); }
+      renderArcade();
+      $('clicker-status').textContent = clicks ? `⏱️ Time! ${clicks} clicks = +${clicks} Arcade Tokens.` : '⏱️ Time! Zero clicks — the coin is disappointed. 😅';
+    }, 15000);
+  };
+
+  // Reaction Sprint
+  let rState = 'idle', rTimer = null, rStart = 0;
+  const box = $('reaction-box');
+  $('reaction-start').onclick = () => {
+    if (rState === 'waiting' || rState === 'go') return;
+    rState = 'waiting';
+    box.className = 'reaction-box ready';
+    box.textContent = 'Wait for green…';
+    $('reaction-status').textContent = '';
+    rTimer = setTimeout(() => {
+      rState = 'go'; rStart = performance.now();
+      box.className = 'reaction-box go';
+      box.textContent = 'CLICK! ⚡';
+    }, 1200 + Math.random() * 2300);
+  };
+  box.onclick = () => {
+    if (rState === 'waiting') {
+      clearTimeout(rTimer); rState = 'idle';
+      box.className = 'reaction-box';
+      box.textContent = 'Too soon! 😅';
+      $('reaction-status').textContent = 'False start — wait for green next time.';
+    } else if (rState === 'go') {
+      const ms = Math.round(performance.now() - rStart);
+      rState = 'idle';
+      box.className = 'reaction-box';
+      box.textContent = `${ms} ms`;
+      let bonus = 0;
+      if (ms < 250) bonus = 15; else if (ms < 300) bonus = 10; else if (ms < 400) bonus = 5;
+      if (!arcade.bestReaction || ms < arcade.bestReaction) { arcade.bestReaction = ms; saveArcade(); }
+      if (bonus) awardTokens(bonus); else renderArcade();
+      $('reaction-status').textContent = bonus ? `⚡ ${ms} ms — +${bonus} Arcade Tokens!` : `${ms} ms. Under 400 ms earns tokens — run it back!`;
+    }
+  };
+
+  // Daily Spin
+  let spinning = false, spinAngle = 0;
+  $('spin-btn').onclick = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (spinning || arcade.lastSpin === today) return;
+    spinning = true;
+    const idx = Math.floor(Math.random() * SPIN_PRIZES.length);
+    // Pointer sits at the top; land the chosen segment's middle under it.
+    const target = 360 * 5 + (360 - idx * 45 - 22.5);
+    spinAngle += target - (spinAngle % 360);
+    const wheel = $('spin-wheel');
+    wheel.style.transform = `rotate(${spinAngle}deg)`;
+    $('spin-status').textContent = 'Spinning… 🎡';
+    setTimeout(() => {
+      spinning = false;
+      arcade.lastSpin = today;
+      awardTokens(SPIN_PRIZES[idx]);
+      $('spin-status').textContent = `🎉 You won +${SPIN_PRIZES[idx]} Arcade Tokens!`;
+    }, 4200);
+  };
+}
 
 /* ---------- boot ---------- */
 (async () => {

@@ -18,8 +18,9 @@ in voice/video, send gifts and run game nights. I'm Houndy
 Black and crimson, built for gamers who actually want to hang out —
 not just scroll. Sign up free and jump in:
 
-- **9 rooms** — The Den, Clip Vault, Pet Pics, Setup Flex, Chill
-  Corner (21+), Meme Cave, Wins & Fails, Beats & Music, Munchie Runs
+- **10 rooms** — The Den, Clip Vault, Pet Pics, Setup Flex, Chill
+  Corner (21+), Meme Cave, Wins & Fails, Beats & Music, Munchie Runs,
+  Looking for Squad
 - **Post clips & pics** — YouTube clips play right in the feed,
   pictures upload in seconds, emote reactions on everything
 - **Voice & Video Lounge** — 4 channels, real mic/cam/screen share

@@ -46,6 +46,29 @@
 <!-- App view -->
 <main id="app-view" class="layout hidden">
   <div class="main-col">
+    <section class="card" id="game-night-hub">
+      <h2>🏆 Game Night Live — Saturdays 8:00 PM CT</h2>
+      <div id="gn-countdown" class="countdown">Loading countdown…</div>
+      <p class="muted" id="gn-date-line"></p>
+      <ol class="ros">
+        <li><strong>8:00</strong> Welcome in The Den</li>
+        <li><strong>8:10</strong> Daily Howl + Pack Quests</li>
+        <li><strong>8:20</strong> Clip Vault sprint</li>
+        <li><strong>8:35</strong> Game of the Week poll</li>
+        <li><strong>8:45</strong> Voice &amp; Video Lounge</li>
+        <li><strong>9:00</strong> Gifts &amp; leaderboard</li>
+      </ol>
+      <div class="row">
+        <button id="gn-rsvp" class="btn primary">RSVP to Game Night</button>
+        <span id="gn-rsvp-count" class="muted"></span>
+      </div>
+    </section>
+
+    <section class="card" id="spotlight">
+      <h2>🌟 Clip of the Week</h2>
+      <div id="spotlight-body"><p class="muted">Loading the Pack's top clip…</p></div>
+    </section>
+
     <section class="card composer">
       <h2>Drop a moment, Pack 📣</h2>
       <div class="kind-tabs">
@@ -111,6 +134,35 @@
         <input id="chat-input" maxlength="500" placeholder="Message the Pack…" class="grow">
         <button class="btn primary" type="submit">Send</button>
       </form>
+    </section>
+
+    <section class="card" id="arcade">
+      <h2>🕹️ Pack Arcade</h2>
+      <p class="muted">Mini-games for lobby downtime. Arcade Tokens are just for fun in here — they're separate from your Hound Coins balance.</p>
+      <p>🪙 <strong><span id="arcade-tokens">0</span> Arcade Tokens</strong> <span class="muted" id="arcade-best"></span></p>
+      <div class="arcade-grid">
+        <div class="arcade-game">
+          <h3>🪙 Coin Clicker Frenzy</h3>
+          <p class="muted">Start a 15-second frenzy and smash the coin — every click earns a token.</p>
+          <button id="clicker-coin" class="clicker-coin" disabled>🪙</button>
+          <p id="clicker-status">Press start, then click like your rank depends on it.</p>
+          <button id="clicker-start" class="btn primary">Start Frenzy</button>
+        </div>
+        <div class="arcade-game">
+          <h3>⚡ Reaction Sprint</h3>
+          <p class="muted">Wait for the box to flash green, then click it as fast as you can. Under 300 ms earns bonus tokens.</p>
+          <div id="reaction-box" class="reaction-box">Press Start</div>
+          <p id="reaction-status"></p>
+          <button id="reaction-start" class="btn primary">Start</button>
+        </div>
+        <div class="arcade-game">
+          <h3>🎡 Daily Spin</h3>
+          <p class="muted">One free spin every day for bonus tokens.</p>
+          <div class="spin-wrap"><div class="spin-pointer">▼</div><div id="spin-wheel" class="spin-wheel"></div></div>
+          <p id="spin-status"></p>
+          <button id="spin-btn" class="btn primary">Spin</button>
+        </div>
+      </div>
     </section>
   </div>
 

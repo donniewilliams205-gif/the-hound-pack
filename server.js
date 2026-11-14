@@ -25,7 +25,7 @@ if (!process.env.JWT_SECRET) {
 store.load();
 const db = store.db;
 
-const ROOMS = ['The Den', 'Clip Vault', 'Pet Pics', 'Setup Flex', 'Chill Corner', 'Meme Cave', 'Wins & Fails', 'Beats & Music', 'Munchie Runs'];
+const ROOMS = ['The Den', 'Clip Vault', 'Pet Pics', 'Setup Flex', 'Chill Corner', 'Meme Cave', 'Wins & Fails', 'Beats & Music', 'Munchie Runs', 'Looking for Squad'];
 const ADULT_ROOM = 'Chill Corner';
 const GIFT_CATALOG = [
   { id: 'gg-token', name: 'GG Token', emoji: '🪙', cost: 10 },

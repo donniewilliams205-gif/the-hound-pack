@@ -14,7 +14,7 @@ Founded by Houndy (@Bludhound420).
   Founder/Admin when it signs up.
 - **Feed & rooms** — The Den, Clip Vault, Pet Pics, Setup Flex, Chill Corner
   (21+, unlocked by the 21+ checkbox), Meme Cave, Wins & Fails, Beats & Music,
-  Munchie Runs. Filter the feed by room.
+  Munchie Runs, Looking for Squad. Filter the feed by room.
 - **Posting** — text moments, picture uploads (JPG/PNG/GIF/WebP, max 5 MB) or
   picture links, and clip posts (YouTube links play inline). Posting earns
   5 Hound Coins. Comments, emote reactions, share/copy-link, delete your own posts.
