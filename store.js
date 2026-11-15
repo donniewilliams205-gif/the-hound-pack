@@ -49,6 +49,8 @@ function seedData() {
       },
     ],
     gifts: [], // {id, fromId, fromName, toId, toName, giftId, giftName, cost, postId, createdAt}
+    reports: [], // {id, reporterId, reporterName, kind, targetId, label, reason, status, createdAt}
+    blocks: [], // {id, userId, blockedUsername, createdAt} — one row per (user, blocked user)
     chatMessages: [], // {id, channel, userId, username, displayName, body, createdAt}
     events: [
       {
@@ -89,7 +91,12 @@ function load() {
     try {
       if (fs.existsSync(file)) {
         db = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (db && Array.isArray(db.users) && Array.isArray(db.posts)) return db;
+        if (db && Array.isArray(db.users) && Array.isArray(db.posts)) {
+        // Migrate older databases: safety collections added after v1.1.0.
+        if (!Array.isArray(db.reports)) db.reports = [];
+        if (!Array.isArray(db.blocks)) db.blocks = [];
+        return db;
+      }
       }
     } catch (e) {
       // fall through to backup / seed

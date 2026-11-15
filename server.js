@@ -414,6 +414,60 @@ app.post('/api/quests/daily-howl', requireAuth, (req, res) => {
   res.json({ coins: req.user.coins, reward: DAILY_HOWL_REWARD });
 });
 
+/* ---------------- reports & blocks (phone-app Safety Center) ---------------- */
+/* The phone app (v1) already POSTs these exact payloads via submitSafety():
+   report {kind:'post'|'member', targetId, label, reason, createdAt} and
+   block {username, action:'block'|'unblock', createdAt}. Until now the
+   website had no such endpoints, so the app could only queue them on-device.
+   These endpoints store them server-side so reports reach the Founder and
+   blocks can sync across a member's devices. Hiding blocked users' posts
+   and chat stays client-side (the app already does that locally). */
+const REPORT_REASONS = ['Spam', 'Harassment or bullying', 'Hate speech', 'Violence or threats', 'Sexual content', 'Scam or fraud', 'Other'];
+app.post('/api/reports', requireAuth, (req, res) => {
+  const { kind, targetId, label, reason } = req.body || {};
+  if (kind !== 'post' && kind !== 'member') return res.status(400).json({ error: "Report kind must be 'post' or 'member'." });
+  const target = String(targetId || '').trim().slice(0, 200);
+  if (!target) return res.status(400).json({ error: 'Nothing to report — pick a post or member first.' });
+  if (!REPORT_REASONS.includes(reason)) return res.status(400).json({ error: 'Pick a reason for the report.' });
+  if (kind === 'post' && !db.posts.find(p => p.id === target)) return res.status(404).json({ error: 'That post no longer exists.' });
+  if (kind === 'member' && !db.users.find(u => u.username.toLowerCase() === target.toLowerCase())) return res.status(404).json({ error: 'That member was not found.' });
+  const report = {
+    id: store.uid(), reporterId: req.user.id, reporterName: req.user.username,
+    kind, targetId: target, label: String(label || '').slice(0, 200),
+    reason, status: 'open', createdAt: new Date().toISOString(),
+  };
+  db.reports.unshift(report);
+  db.reports = db.reports.slice(0, 500);
+  store.logSecurity('report', `${req.user.username} reported ${kind} ${target} (${reason})`);
+  store.save();
+  res.status(201).json({ report });
+});
+app.get('/api/reports', requireAuth, (req, res) => {
+  if (!req.user.isFounder) return res.status(403).json({ error: 'Only the Founder can review reports.' });
+  res.json({ reports: db.reports.slice(0, 100) });
+});
+app.post('/api/blocks', requireAuth, (req, res) => {
+  const { username, action } = req.body || {};
+  const blocked = String(username || '').trim().toLowerCase();
+  if (!USERNAME_RE.test(blocked)) return res.status(400).json({ error: 'Pick a member to block.' });
+  if (blocked === req.user.username.toLowerCase()) return res.status(400).json({ error: 'You cannot block yourself.' });
+  if (!db.users.find(u => u.username.toLowerCase() === blocked)) return res.status(404).json({ error: 'That member was not found.' });
+  if (action === 'block') {
+    if (!db.blocks.find(b => b.userId === req.user.id && b.blockedUsername === blocked)) {
+      db.blocks.push({ id: store.uid(), userId: req.user.id, blockedUsername: blocked, createdAt: new Date().toISOString() });
+    }
+  } else if (action === 'unblock') {
+    db.blocks = db.blocks.filter(b => !(b.userId === req.user.id && b.blockedUsername === blocked));
+  } else {
+    return res.status(400).json({ error: "Action must be 'block' or 'unblock'." });
+  }
+  store.save();
+  res.json({ blocked: db.blocks.filter(b => b.userId === req.user.id).map(b => b.blockedUsername) });
+});
+app.get('/api/blocks', requireAuth, (req, res) => {
+  res.json({ blocked: db.blocks.filter(b => b.userId === req.user.id).map(b => b.blockedUsername) });
+});
+
 /* ---------------- system / security center ---------------- */
 app.get('/api/system', (req, res) => {
   const user = currentUser(req);
