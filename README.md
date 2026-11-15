@@ -33,6 +33,12 @@ Founded by Houndy (@Bludhound420).
 - **Aegis Shield security center** — helmet security headers, login
   rate-limiting, and a security event log (signups, failed logins, rate-limit
   hits) that the Founder can see in the sidebar.
+- **Safety reports & blocks (v1.2.0)** — signed-in members can report a post
+  or member (`POST /api/reports`, with a fixed set of reasons; the Founder
+  reviews reports with `GET /api/reports`), and each member's block list is
+  stored on the server (`POST /api/blocks` to block/unblock, `GET
+  /api/blocks` to read it) so blocks sync across devices. These endpoints
+  power the phone app's Safety Center.
 
 ## Run it on your own computer (try it out)
 
